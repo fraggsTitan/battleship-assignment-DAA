@@ -37,10 +37,13 @@ This AI is designed to play optimally on a standard Battleship board by switchin
 
 ```
 .
-├── battleship_ai.py      # Main AI logic
-├── board.py              # Board constants and state
-├── graph.py              # GridGraph and Vertex classes
+├── board.py              # Board size, ship placement, grid state, and validations
+├── graph.py              # GridGraph & Vertex classes for DFS-based traversal logic
+├── ai.py                 # Computer player logic (hunt & target strategy)
+├── game.py               # Core game loop and rules (turns, win/lose conditions)
+├── ui_game.py            # UI layer (grid rendering, input handling, animations)
 └── README.md             # Project documentation
+
 ```
 
 ---
