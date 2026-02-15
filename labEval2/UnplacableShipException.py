@@ -1,0 +1,2 @@
+class UnplacableShipException(Exception):
+    pass

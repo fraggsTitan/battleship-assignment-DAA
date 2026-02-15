@@ -5,10 +5,13 @@ from OutOfBoundsException import OutOfBoundsException
 class Fleet:
 
     def __init__(self,sideLength):
+        #ships and nodes are the component that is operated on by placer of ships
         self.ships=set()#set of ships
         self.nodes={}#dictionary of nodes mapping to ships
+        #hitcells and aliveships are used by the hitter
         self.hitCells=set()#maintain record of every single cell which has been hit
         self.aliveShips=0
+        #sidelength is a  common variable
         self.sideLength=sideLength
 
     def addShip(self,vertices):#array of coordinates to represent a ship
@@ -53,6 +56,9 @@ class Fleet:
     def cellOccupied(self,coordinate):
         return coordinate in self.nodes
 
+    def cellHit(self,coordinate):
+        return coordinate in self.hitCells
+    
     class HitRecord:
 
         def __init__(self,hit,sunk,ship):
