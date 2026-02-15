@@ -1,146 +1,56 @@
-<<<<<<< HEAD
-# Graph.py
-import random
-from enum import Enum
+# graph.py
+
+class Vertex:
+    def __init__(self, r, c):
+        self.r = r
+        self.c = c
+
+    def __hash__(self):
+        return hash((self.r, self.c))
+
+    def __eq__(self, other):
+        return self.r == other.r and self.c == other.c
+
+    def __repr__(self):
+        return f"V({self.r},{self.c})"
 
 
-class Cell(Enum):
-    EMPTY = 0
-    SHIP = 1
-    HIT = 2
-    MISS = 3
+class GridGraph:
+    """
+    Explicit graph representation of a BOARD_SIZE x BOARD_SIZE grid.
+    Vertices are cells, edges are 4-directional adjacency.
+    """
 
+    def __init__(self, board):
+        self.board = board
+        self.size = board.size
 
-class Board:
-    def __init__(self, size=10):
-        self.size = size
-        self.grid = [[Cell.EMPTY for _ in range(size)] for _ in range(size)]
-        # ship_id -> list[(r, c)]
-        self.ships = {}
-        self.ship_id_counter = 0
-
-    def in_bounds(self, r, c):
-        return 0 <= r < self.size and 0 <= c < self.size
-
-    def place_ship_random(self, length):
+    def neighbors(self, v: Vertex):
         """
-        Random ship placement:
-        pick random (r, c, horizontal/vertical) until a non‑overlapping,
-        in‑bounds path of given length is found, then mark as SHIP.
+        GRAPH ADJACENCY:
+        Returns all adjacent vertices (edges implied).
         """
-        while True:
-            r = random.randint(0, self.size - 1)
-            c = random.randint(0, self.size - 1)
-            horizontal = random.choice([True, False])
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        result = []
 
-            cells = []
-            ok = True
-            for i in range(length):
-                nr = r
-                nc = c
-                if horizontal:
-                    nc = c + i
-                else:
-                    nr = r + i
+        for dr, dc in directions:
+            nr, nc = v.r + dr, v.c + dc
+            if 0 <= nr < self.size and 0 <= nc < self.size:
+                result.append(Vertex(nr, nc))
 
-                if not self.in_bounds(nr, nc):
-                    ok = False
-                    break
-                if self.grid[nr][nc] != Cell.EMPTY:
-                    ok = False
-                    break
-                cells.append((nr, nc))
+        return result
 
-            if not ok:
-                continue
+"""
+Try to represent nodes as edges of graph, we can have 2 types of nodes:
+1. Missed Nodes
+2. Hit Nodes
+anything else, we don't have to care about
 
-            ship_id = self.ship_id_counter
-            self.ship_id_counter += 1
-            self.ships[ship_id] = cells
-            for (nr, nc) in cells:
-                self.grid[nr][nc] = Cell.SHIP
-            return ship_id
+in each placed component, we have to model a ship as a continuous segment of such nodes,
+maybe in each of the boards we just store the indexes of the ship
+we can have it like
+dictionary of each ship vertex pointing to a ship,
+array of such ships are maintained, when you hit, you can remove it from this list and add it to the corresponding players hit board.
+when an array size becomes 0, ship is dead,send a notification to user
 
-    def receive_shot(self, r, c):
-        """
-        Apply a shot to this board.
-        Returns: "MISS", "HIT", "SUNK", "REPEAT", "OUT"
-        """
-        if not self.in_bounds(r, c):
-            return "OUT"
-
-        cell = self.grid[r][c]
-        if cell in (Cell.HIT, Cell.MISS):
-            return "REPEAT"
-
-        if cell == Cell.EMPTY:
-            self.grid[r][c] = Cell.MISS
-            return "MISS"
-
-        if cell == Cell.SHIP:
-            self.grid[r][c] = Cell.HIT
-            # find which ship and check sunk
-            for ship_id, cells in self.ships.items():
-                if (r, c) in cells:
-                    if all(self.grid[rr][cc] == Cell.HIT for (rr, cc) in cells):
-                        return "SUNK"
-                    return "HIT"
-
-        return "MISS"
-
-    def all_sunk(self):
-        for cells in self.ships.values():
-            for (r, c) in cells:
-                if self.grid[r][c] == Cell.SHIP:
-                    return False
-        return True
-
-    def debug_print(self, reveal=False):
-        """
-        Simple text output for debugging.
-        """
-        for r in range(self.size):
-            row = []
-            for c in range(self.size):
-                cell = self.grid[r][c]
-                if cell == Cell.EMPTY:
-                    ch = "."
-                elif cell == Cell.SHIP:
-                    ch = "S" if reveal else "."
-                elif cell == Cell.HIT:
-                    ch = "X"
-                elif cell == Cell.MISS:
-                    ch = "o"
-                else:
-                    ch = "?"
-                row.append(ch)
-            print(" ".join(row))
-        print()
-=======
-from States import CellState, AIModeS
-
-class Graph:
-
-    class Cell:
-        def __init__(self, i, j):
-            self.i = i
-            self.j = j
-            self.state = CellState.UNKNOWN
-
-        def set_state(self, state):
-            self.state = state
-    def __init__(self):
-        self.grid=[[]]
-        grid=10*[]
-        for i in range(10):
-            grid[i]=10*[]
-            for j in range (10):
-                grid[i][j]=Graph.Cell(i,j)
-
-    def setHit(self,i,j,state):
-        if(i>=10 or j>=10):
-            IndexError("Illegal index")
-        self.grid[i][j].set_state(state)
-    
-            
->>>>>>> c7b617d6e47c3be0948d561f2515dd55c19069f3
+"""

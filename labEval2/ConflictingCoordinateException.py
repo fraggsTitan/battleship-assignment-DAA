@@ -1,0 +1,2 @@
+class ConflictingCoordinateException(Exception):
+    pass
