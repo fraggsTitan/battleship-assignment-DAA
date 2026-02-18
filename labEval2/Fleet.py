@@ -1,10 +1,12 @@
 from ConflictingCoordinateException import ConflictingCoordinateException
 from Ship import Ship
 from OutOfBoundsException import OutOfBoundsException
-
+from typing import List, Tuple, Set, Dict
 class Fleet:
-
-    def __init__(self,sideLength):
+    """
+    THARUN CB.SC.U4CSE24053
+    """
+    def __init__(self,sideLength:int):
         #ships and nodes are the component that is operated on by placer of ships
         self.ships=set()#set of ships
         self.nodes={}#dictionary of nodes mapping to ships
@@ -13,8 +15,13 @@ class Fleet:
         self.aliveShips=0
         #sidelength is a  common variable
         self.sideLength=sideLength
+    class HitRecord:
 
-    def addShip(self,vertices):#array of coordinates to represent a ship
+        def __init__(self,hit:bool,sunk:bool,ship:Ship):
+            self.hit=hit
+            self.sunk=sunk
+            self.ship=ship
+    def addShip(self,vertices:Set[Tuple[int,int]]):#array of coordinates to represent a ship
         for coordinate in vertices:
             if(coordinate in self.nodes):
                 raise ConflictingCoordinateException(f"The coordinate {coordinate} has already been used by another ship of size {len(self.nodes.get(coordinate).cells)}")
@@ -28,7 +35,7 @@ class Fleet:
             self.nodes[coordinate]=newShip
         
 
-    def hitShip(self,coordinate):#orchestrates a hit 
+    def hitShip(self,coordinate:Tuple[int,int])->HitRecord:#orchestrates a hit 
         if(self.outOfBounds(coordinate)):
                 raise OutOfBoundsException(f"The cell {coordinate}is out of bounds for a {self.sideLength}x{self.sideLength} grid.")
         if coordinate in self.hitCells:
@@ -46,26 +53,21 @@ class Fleet:
             return self.HitRecord(hit=True,sunk=True,ship=targetShip)#return target ship for UI to mark as killed       
         return self.HitRecord(hit=True,sunk=False,ship=None)#cell was hit but ship not killed
     
-    def outOfBounds(self, coordinate):
+    def outOfBounds(self, coordinate:Tuple[int,int])->bool:
         r, c = coordinate
         return not (0 <= r < self.sideLength and 0 <= c < self.sideLength)
     
-    def fleetAlive(self):#returns if fleet is alive or not
+    def fleetAlive(self)->bool:#returns if fleet is alive or not
         return self.aliveShips>0
     
-    def cellOccupied(self,coordinate):
+    def cellOccupied(self,coordinate:Tuple[int,int])->bool:
         return coordinate in self.nodes
 
-    def cellHit(self,coordinate):
+    def cellHit(self,coordinate:Tuple[int,int])->bool:
         return coordinate in self.hitCells
     
-    class HitRecord:
-
-        def __init__(self,hit,sunk,ship):
-            self.hit=hit
-            self.sunk=sunk
-            self.ship=ship
-    def __str__(self):
+    
+    def __str__(self)->str:
         lines = []
 
         for r in range(self.sideLength):
@@ -88,3 +90,4 @@ class Fleet:
 
         return "\n".join(lines)
 
+ 
