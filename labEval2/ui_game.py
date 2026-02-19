@@ -1,11 +1,19 @@
 # ui_pygame.py
 import sys
 import pygame
-from board import BOARD_SIZE, SHIP_SIZES, SHIP, EMPTY, HIT, MISS
 from game import BattleshipGame
+from Grid import Grid
+from Fleet import Fleet
+from Ship import Ship
+from typing import Set,List,Tuple
+
+"""
+    SHASHAANK MK- CB.SC.U4CSE24048
+"""
 
 pygame.init()
-
+BOARD_SIZE=12
+SHIP_SIZES=[5,4,3,3,2]
 CELL = 40
 MARGIN_TOP = 80
 MARGIN_SIDE = 40
@@ -23,6 +31,7 @@ MISS_COLOR   = (120, 140, 170)  # Cool steel gray-blue
 HOVER_COLOR  = (255, 215, 0)    # Gold (very visible)
 VALID_COLOR  = (80, 220, 120)   # Bright mint green
 INVALID_COLOR= (255, 90, 90)    # Light danger red
+SUNK_COLOR = (255, 215, 0)  # Yellow
 
 
 FONT = pygame.font.SysFont("consolas", 20)
@@ -81,16 +90,24 @@ def draw_board(surface, board, top_left, reveal_ships=False, title=""):
             rect = pygame.Rect(x0 + c * CELL, y0 + r * CELL, CELL, CELL)
 
             base_color = (25, 30, 45) if (r + c) % 2 == 0 else (30, 35, 55)
-            cell = board.grid[r][c]
+            fleet = board.fleet
+            coord = (r, c)
 
-            if cell == HIT:
-                color = HIT_COLOR
-            elif cell == MISS:
-                color = MISS_COLOR
-            elif cell == SHIP and reveal_ships:
-                color = SHIP_COLOR
+            if fleet.cellHit(coord):
+                if coord in fleet.nodes:
+                    ship = fleet.nodes[coord]
+                    if ship.isSunk():   # assuming you have this
+                        color = SUNK_COLOR
+                    else:
+                        color = HIT_COLOR
+                else:
+                    color = MISS_COLOR
             else:
-                color = base_color
+                if reveal_ships and coord in fleet.nodes:
+                    color = SHIP_COLOR
+                else:
+                    color = base_color
+
 
             pygame.draw.rect(surface, color, rect)
             pygame.draw.rect(surface, GRID, rect, 1)
@@ -164,30 +181,52 @@ def main():
                         cell = mouse_to_cell((mx, my), ai_anchor)
                         if cell:
                             r, c = cell
-                            res = game.player_shoot(r, c)
-                            if res in ("HIT", "MISS"):
-                                ar, ac, ares = game.ai_shoot()
+                            record = game.player_shoot(r, c)
+                            if record is None:
+                                message = "You already shot there."
+                            else:
+                                if record.hit:
+                                    if record.sunk:
+                                        message = "You SUNK a ship!"
+                                    else:
+                                        message = "HIT!"
+                                else:
+                                    message = "MISS!"
                                 if game.player_won():
                                     message = "YOU WIN! All enemy ships sunk."
-                                elif game.ai_won():
-                                    message = "PC WINS! Your fleet is destroyed."
-                                else:
-                                    message = f"You: {res} at {chr(ord('A')+r)}{c}, PC: {ares} at {chr(ord('A')+ar)}{ac}"
-                            elif res == "REPEAT":
-                                message = "You already shot there."
+                                if not game.player_won():
+                                    pygame.display.flip()   # show player's result first
+                                    pygame.time.wait(400)   # short pause
+                                    ar, ac, a_record = game.ai_shoot()
+
+                                    if a_record.hit:
+                                        if a_record.sunk:
+                                            message += "  |  PC SUNK your ship!"
+                                        else:
+                                            message += "  |  PC HIT!"
+                                    else:
+                                        message += "  |  PC MISS!"
+                                    if game.ai_won():
+                                        message = "PC WINS! Your fleet is destroyed."
+
 
         screen.fill(BG)
 
-        banner = BIG.render(
-            "SHIP PLACEMENT" if placing_phase else "YOUR TURN",
-            True,
-            (180, 220, 180),
-        )
-        screen.blit(banner, (WIDTH // 2 - banner.get_width() // 2, 20))
+        if game.player_won():
+            banner_text = "YOU WIN!"
+        elif game.ai_won():
+            banner_text = "PC WINS!"
+        elif placing_phase:
+            banner_text = "SHIP PLACEMENT"
+        else:
+            banner_text = "YOUR TURN"
+
+        banner = BIG.render(banner_text, True, (180, 220, 180))
+        screen.blit(banner, (WIDTH//2 - banner.get_width()//2, 20))
 
         draw_board(
             screen,
-            game.player_board,
+            game.player_place_board,
             player_anchor,
             reveal_ships=True,
             title="YOUR BOARD",
@@ -195,7 +234,7 @@ def main():
 
         draw_board(
             screen,
-            game.player_view if not placing_phase else game.ai_board,
+            game.ai_place_board,
             ai_anchor,
             reveal_ships=False,
             title="PC BOARD",
