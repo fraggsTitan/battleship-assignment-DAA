@@ -33,3 +33,29 @@ class BattleshipGame:
         # naive check: count S cells
         total = len(self.player_place_board.fleet.nodes)#nodes is dictionary which maps every coordinate to a ship
         return total == sum(self.SHIP_SIZES)
+    
+    """
+        Darshan V- CB.SC.U4CSE24009
+    """
+    # gameplay methods
+    def player_shoot(self, r:int, c:int):##refactor frontend to recieve this hitrecord
+        record=self.player_attack_board.playerHit((r,c))
+        #record has 3 attributes hit , sunk, ship
+        # hit will return whether ship has been hit and sunk will tell if that ship was sunk or not
+        # ship will be none unless ship is sunk, this is for frontend to understand and mark cells as dead or not , ship is a set of vertices       
+        return record
+
+    def ai_shoot(self):#refactor this in frontend too
+        r, c = self.ai_attack_board.getHit()
+        result = self.ai_attack_board.makeHit((r,c))
+        return r, c, result
+
+    """
+        SHASHAANK MK- CB.SC.U4CSE24048
+    """
+    def player_won(self):
+        #print("AI Remaining Ships: ",self.player_attack_board.shipLengths)
+        return self.player_attack_board.allShipsSunk()
+
+    def ai_won(self):
+        return self.ai_attack_board.allShipsSunk()

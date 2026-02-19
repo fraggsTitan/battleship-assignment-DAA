@@ -192,6 +192,164 @@ class Grid:
         print("Placed ship at vertices: ",vertices)
 
 
+    """
+    Darshan V -CB.SC.U4CSE24009
+    """
+
+    #hitting for player
+    def playerHit(self,coordinate:Tuple[int,int]):
+        print("Player ships:",self.shipLengths)
+        if(self.role!=self.Role.PLAYER):
+            raise self.RoleException("Cannot call playerHit() unless you have role of PLAYER")
+        if coordinate in self.fleet.hitCells:#duplicate cell has been hit
+            return None
+        return self.makeHit(coordinate)
+    #since logic for makeHit is same for AI and PLAYER, we can use  common method for update logic
+    def makeHit(self,choice:Tuple[int,int])->Fleet.HitRecord:
+        record=self.fleet.hitShip(choice)#hitrecord is generated
+        if record.sunk:#if ship was sunk
+            self.shipLengths.remove(len(record.ship.cells))#removes that ship from our shiplength array
+            for r,c in record.ship.cells:
+                if (r,c) in self.shipCells:
+                    self.shipCells.remove((r,c))#remove all coordinates of that ship from shipcells
+        elif record.hit:#if ship was hit, we just need to add it to shipcells
+            self.shipCells.add(choice)
+        #frontend can make sense of this record now 
+        return record
+    
+    #DP method to hit ships only when Mode is HUNT
+    def huntMode(self)->Tuple[int,int]:
+        """
+        Maintain 2 2D matrices, one for max number of cells we can extend downwards from a cell and another for max we can extend
+        rightwards,  then use this to  build ship count at each cell      
+        TC:O(n^2*maxShipSize)
+        Space=O(n^2)  
+        """
+        sideLength=self.fleet.sideLength
+        maxShipSize=max(self.shipLengths)#try to find wherever biggest current alive ship can fit
+        rightExtension=[[0 for _ in range(sideLength+1)] for _ in range(sideLength+1)]#max cells we can extend in right from current cell
+        downExtension=[[0 for _ in range(sideLength+1)] for _ in range(sideLength+1)]#max cells we can extend downwards from current cell
+        for i in reversed(range(sideLength)):#iterate from bottom right in right to left fashion and build right and down extension
+            for j in reversed(range(sideLength)):
+                if(self.fleet.cellHit((i,j))):
+                    continue
+                rightExtension[i][j]=rightExtension[i][j+1]+1
+                downExtension[i][j]=downExtension[i+1][j]+1
+        shipCounts=[[0 for _ in range(sideLength)] for _ in range(sideLength)]#store how many possible ships could be placed in a given cell
+        for i in range(sideLength):#iterate over all cells and build the shipCounts matrix
+            for j in range(sideLength):
+                if self.fleet.cellHit((i,j)):
+                    continue
+                if(rightExtension[i][j]>=maxShipSize):#increase ship counts of all cells where a ship starting from current index could be placed only if the extension value of current cell is at least as large as maxShipSize
+                    for k in range(maxShipSize):
+                        shipCounts[i][j+k]+=1
+                if(downExtension[i][j]>=maxShipSize):
+                    for k in range(maxShipSize):
+                        shipCounts[i+k][j]+=1
+        maxCount = max(max(row) for row in shipCounts)#this is the max shipcount in any cell over all the cells
+        maxCells = [
+                (i, j)
+                for i in range(sideLength)
+                for j in range(sideLength)
+                if shipCounts[i][j] == maxCount
+            ]#all cells with shipcount==maxcount
+        return random.choice(maxCells)#pick random cell from maxcells
+    
+    def targetMode(self) -> Tuple[int, int]:
+        sideLength = self.fleet.sideLength
+
+        # ---- Step 1: get one connected cluster ----
+        seed = next(iter(self.shipCells))
+        stack = [seed]
+        cluster = set()
+
+        while stack:
+            cell = stack.pop()
+            if cell in cluster:
+                continue
+            cluster.add(cell)
+
+            i, j = cell
+            neighbors = [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]
+            for n in neighbors:
+                if n in self.shipCells and n not in cluster:
+                    stack.append(n)
+
+        hits = list(cluster)
+
+        # ---- Step 2: single hit ----
+        if len(hits) == 1:
+            i, j = hits[0]
+            neighbors = [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]
+
+            valid = [
+                (x,y)
+                for (x,y) in neighbors
+                if 0 <= x < sideLength
+                and 0 <= y < sideLength
+                and not self.fleet.cellHit((x,y))
+            ]
+
+            return random.choice(valid)
+
+        # ---- Step 3: determine orientation safely ----
+        rows = {i for i,_ in hits}
+        cols = {j for _,j in hits}
+
+        candidates = []
+
+        if len(rows) == 1:  # horizontal
+            row = next(iter(rows))
+            sorted_hits = insertionSortByIndex(hits.copy(), 1)
+            minCol = sorted_hits[0][1]
+            maxCol = sorted_hits[-1][1]
+
+            candidates = [
+                (row, minCol - 1),
+                (row, maxCol + 1)
+            ]
+
+        elif len(cols) == 1:  # vertical
+            col = next(iter(cols))
+            sorted_hits = insertionSortByIndex(hits.copy(), 0)
+            minRow = sorted_hits[0][0]
+            maxRow = sorted_hits[-1][0]
+
+            candidates = [
+                (minRow - 1, col),
+                (maxRow + 1, col)
+            ]
+
+        else:
+            # ambiguous (touching ships forming non-line shape)
+            for i,j in hits:
+                for n in [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]:
+                    if n not in cluster:
+                        candidates.append(n)
+
+        valid = [
+            (x,y)
+            for (x,y) in candidates
+            if 0 <= x < sideLength
+            and 0 <= y < sideLength
+            and not self.fleet.cellHit((x,y))
+        ]
+
+        # At this point, valid SHOULD exist if ship not resolved.
+        # If not, something outside targetMode should clear cluster.
+        return random.choice(valid)
+    
+    #THIS METHOD COMMUNICATES WITH FRONTEND SO MAKE INFORMATION VERY CLEAR
+    def getHit(self)->Tuple[int,int]:
+        print("AI ships:",self.shipLengths)
+        if(self.role!=self.Role.AI):
+            raise self.RoleException("Cannot call getHit() unless you have role of AI")
+        #gets a hit coordinate and then launches hit on that cell
+        if len(self.shipCells)>0:#target mode
+            choice=self.targetMode()
+        else:
+            choice=self.huntMode()
+        return choice
 
 
 
