@@ -33,12 +33,12 @@ class Grid:
     #bottom and rightbound are magnitude values, not actual values w.r.t the grid
     def regionOccupancy(self,startI:int,startJ:int,rightBound:int,bottomBound:int)->int:
         #iterate over all coordinates and return how many cells in region are occupied
-        shipsInRegion=0
+        shipCellsInRegion=0
         for i in range(startI,startI+bottomBound+1):
             for j in range(startJ,startJ+rightBound+1):
                 if(self.fleet.cellOccupied((i,j))):
-                    shipsInRegion=shipsInRegion+1
-        return shipsInRegion
+                    shipCellsInRegion=shipCellsInRegion+1
+        return shipCellsInRegion
     
     def isPlacementValid(self, vertices):
         for v in vertices:
