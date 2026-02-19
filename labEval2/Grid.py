@@ -31,6 +31,7 @@ class Grid:
         For hitting use DP, something like tracing a path from top-left to bottom right in a grid in terms of DP
     """
     #bottom and rightbound are magnitude values, not actual values w.r.t the grid
+    #TC:0(n2) SC:0(1) extra
     def regionOccupancy(self,startI:int,startJ:int,rightBound:int,bottomBound:int)->int:
         #iterate over all coordinates and return how many cells in region are occupied
         shipsInRegion=0
@@ -46,7 +47,7 @@ class Grid:
                 return False
         return True
     
-
+    #TC : O(1)
     #can periodically check for this from frontend after every move
     def allShipsSunk(self):
         return len(self.shipLengths)==0
@@ -83,7 +84,7 @@ class Grid:
             for i in range(shipSize):
                 vertices.add((randomI + i, randomJ))
         return vertices
-    
+    #TC: O(n2logn) SC:O(logn)
     #this function recursively does DAC to fit in ship, this only returns vertices where to place ship, actual ship placement 
     #has to be elsewhere
     def shipDAC(self,startI:int,startJ:int,rightBound:int,bottomBound:int,shipSize:int)->Tuple[Set[Tuple[int,int]],int]:
@@ -122,8 +123,9 @@ class Grid:
                 continue
             minOccupied=min(minOccupied,region[1])#get region with min ships
         minShipRegions=[region for region in [topLeft,topRight,bottomLeft,bottomRight] if region is not None and region[1]==minOccupied]
-        return minShipRegions[random.randint(0,len(minShipRegions)-1)]
+        return (minShipRegions[random.randint(0,len(minShipRegions)-1)][0],self.regionOccupancy(startI,startJ,rightBound,bottomBound))
 
+    #O(n2)
     def bruteForcePlacement(self, startI, startJ, rightBound, bottomBound, shipSize):
         endI = startI + bottomBound
         endJ = startJ + rightBound
@@ -149,7 +151,7 @@ class Grid:
         return None
 
     
-
+    #O(k*n2logn)
     def placeAllShips(self):#no return
         #uses shipDAC and places all ships
         for i in range(len(self.shipLengths)):
@@ -161,7 +163,7 @@ class Grid:
             self.fleet.addShip(placing)
         #will place all ships
 
-        
+    #O(k)
     def can_place_ship(self,r:int,c:int,length:int,orient:chr)->bool:
         #orient can be 'H' or 'V'
         if orient=='H':#horizontal placement
@@ -178,7 +180,7 @@ class Grid:
                 if(self.fleet.cellOccupied((r+i,c))):
                     return False
             return True
-    
+    #O(k)
     def player_place_ship(self, r:int, c:int, length:int, orient:chr):
         #frontend only calls this if canplaceship is true
         vertices=set()

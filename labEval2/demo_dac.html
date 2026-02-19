@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DAC Grid Visualizer</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+    }
+
+    #grid {
+      display: grid;
+      margin: 20px auto;
+      gap: 2px;
+    }
+
+    .cell {
+      width: 30px;
+      height: 30px;
+      background: #eee;
+      border: 1px solid #ccc;
+    }
+
+    .occupied {
+      background: #333;
+    }
+
+    .region {
+      background: rgba(0, 150, 255, 0.3);
+    }
+
+    .chosen {
+      background: rgba(255, 0, 0, 0.6);
+    }
+  </style>
+</head>
+<body>
+
+<h2>Divide & Conquer Grid Visualizer</h2>
+<button onclick="startDAC()">Start DAC</button>
+
+<div id="grid"></div>
+
+<script>
+const N = 8; // grid size
+const grid = document.getElementById("grid");
+grid.style.gridTemplateColumns = `repeat(${N}, 30px)`;
+
+// grid data
+let board = [];
+let cells = [];
+
+// create grid
+for (let i = 0; i < N; i++) {
+  board[i] = [];
+  cells[i] = [];
+  for (let j = 0; j < N; j++) {
+    board[i][j] = Math.random() < 0.25 ? 1 : 0; // random occupancy
+    let div = document.createElement("div");
+    div.classList.add("cell");
+    if (board[i][j] === 1) div.classList.add("occupied");
+    grid.appendChild(div);
+    cells[i][j] = div;
+  }
+}
+
+// region occupancy (like yours)
+function regionOccupancy(startI, startJ, rightBound, bottomBound) {
+  let count = 0;
+  for (let i = startI; i <= startI + bottomBound; i++) {
+    for (let j = startJ; j <= startJ + rightBound; j++) {
+      if (board[i][j] === 1) count++;
+    }
+  }
+  return count;
+}
+
+// clear highlights
+function clearHighlights() {
+  for (let i = 0; i < N; i++) {
+    for (let j = 0; j < N; j++) {
+      cells[i][j].classList.remove("region");
+      cells[i][j].classList.remove("chosen");
+    }
+  }
+}
+
+// highlight region
+function highlightRegion(startI, startJ, rightBound, bottomBound, chosen=false) {
+  for (let i = startI; i <= startI + bottomBound; i++) {
+    for (let j = startJ; j <= startJ + rightBound; j++) {
+      cells[i][j].classList.add(chosen ? "chosen" : "region");
+    }
+  }
+}
+
+// async sleep
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// DAC recursion
+async function shipDAC(startI, startJ, rightBound, bottomBound) {
+
+  if (rightBound < 0 || bottomBound < 0) return null;
+  if (startI >= N || startJ >= N) return null;
+
+  clearHighlights();
+  highlightRegion(startI, startJ, rightBound, bottomBound);
+
+  await sleep(600);
+
+  let occ = regionOccupancy(startI, startJ, rightBound, bottomBound);
+  console.log("Region:", startI, startJ, "Size:", rightBound, bottomBound, "Occupancy:", occ);
+
+  if (occ === 0) {
+    highlightRegion(startI, startJ, rightBound, bottomBound, true);
+    return { startI, startJ, occ };
+  }
+
+  if (rightBound <= 1 && bottomBound <= 1) {
+    return { startI, startJ, occ };
+  }
+
+  let halfR = Math.floor(rightBound / 2);
+  let halfB = Math.floor(bottomBound / 2);
+
+  let regions = [];
+
+  regions.push(await shipDAC(startI, startJ, halfR, halfB));
+  regions.push(await shipDAC(startI, startJ + halfR + 1, halfR, halfB));
+  regions.push(await shipDAC(startI + halfB + 1, startJ, halfR, halfB));
+  regions.push(await shipDAC(startI + halfB + 1, startJ + halfR + 1, halfR, halfB));
+
+  regions = regions.filter(r => r !== null);
+
+  if (regions.length === 0) return null;
+
+  let minOcc = Math.min(...regions.map(r => r.occ));
+  let chosen = regions.find(r => r.occ === minOcc);
+
+  clearHighlights();
+  highlightRegion(chosen.startI, chosen.startJ, halfR, halfB, true);
+
+  await sleep(600);
+
+  return chosen;
+}
+
+async function startDAC() {
+  await shipDAC(0, 0, N-1, N-1);
+}
+</script>
+
+</body>
+</html>
