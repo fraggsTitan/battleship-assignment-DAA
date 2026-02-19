@@ -260,7 +260,7 @@ class Grid:
     def targetMode(self) -> Tuple[int, int]:
         sideLength = self.fleet.sideLength
 
-        # ---- Step 1: get one connected cluster ----
+        # ---- Step 1: Extract ONE connected cluster ----
         seed = next(iter(self.shipCells))
         stack = [seed]
         cluster = set()
@@ -279,7 +279,7 @@ class Grid:
 
         hits = list(cluster)
 
-        # ---- Step 2: single hit ----
+        # ---- Step 2: Single hit case ----
         if len(hits) == 1:
             i, j = hits[0]
             neighbors = [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]
@@ -292,15 +292,20 @@ class Grid:
                 and not self.fleet.cellHit((x,y))
             ]
 
-            return random.choice(valid)
+            # fallback (shouldn't happen normally)
+            if valid:
+                return random.choice(valid)
+            else:
+                return self.huntMode()
 
-        # ---- Step 3: determine orientation safely ----
+        # ---- Step 3: Determine orientation SAFELY ----
         rows = {i for i,_ in hits}
         cols = {j for _,j in hits}
 
         candidates = []
 
-        if len(rows) == 1:  # horizontal
+        # STRICT horizontal (all rows same AND multiple columns)
+        if len(rows) == 1 and len(cols) > 1:
             row = next(iter(rows))
             sorted_hits = insertionSortByIndex(hits.copy(), 1)
             minCol = sorted_hits[0][1]
@@ -311,7 +316,8 @@ class Grid:
                 (row, maxCol + 1)
             ]
 
-        elif len(cols) == 1:  # vertical
+        # STRICT vertical (all columns same AND multiple rows)
+        elif len(cols) == 1 and len(rows) > 1:
             col = next(iter(cols))
             sorted_hits = insertionSortByIndex(hits.copy(), 0)
             minRow = sorted_hits[0][0]
@@ -322,13 +328,15 @@ class Grid:
                 (maxRow + 1, col)
             ]
 
+        # Ambiguous / stacked / L-shaped cluster
         else:
-            # ambiguous (touching ships forming non-line shape)
             for i,j in hits:
-                for n in [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]:
+                neighbors = [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]
+                for n in neighbors:
                     if n not in cluster:
                         candidates.append(n)
 
+        # ---- Step 4: Filter valid candidates ----
         valid = [
             (x,y)
             for (x,y) in candidates
@@ -337,9 +345,12 @@ class Grid:
             and not self.fleet.cellHit((x,y))
         ]
 
-        # At this point, valid SHOULD exist if ship not resolved.
-        # If not, something outside targetMode should clear cluster.
+        # If no valid moves (rare edge case), fallback to hunt
+        if not valid:
+            return self.huntMode()
+
         return random.choice(valid)
+    
     
     #THIS METHOD COMMUNICATES WITH FRONTEND SO MAKE INFORMATION VERY CLEAR
     def getHit(self)->Tuple[int,int]:
