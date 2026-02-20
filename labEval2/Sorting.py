@@ -19,15 +19,24 @@ def insertionSortByIndex( arr: list[tuple[int,int]], index: int):
     return arr
 
 def insertionSortDescending(arr):
-    for i in range(1, len(arr)):
-        key = arr[i]
-        j = i - 1
+    if len(arr) == 0:
+        return arr
 
-        # Move elements smaller than key one step right
-        while j >= 0 and arr[j] < key:
-            arr[j + 1] = arr[j]
-            j -= 1
+    # Step 1: Find maximum value to know number of buckets needed
+    max_val = max(arr)
 
-        arr[j + 1] = key
+    # Step 2: Create buckets
+    buckets = [[] for _ in range(max_val + 1)]
 
-    return arr
+    # Step 3: Put elements into their respective buckets
+    for num in arr:
+        buckets[num].append(num)
+
+    # Step 4: Collect elements from buckets in descending order
+    sorted_arr = []
+    for i in range(max_val, -1, -1):
+        for num in buckets[i]:
+            sorted_arr.append(num)
+
+    return sorted_arr
+
