@@ -4,7 +4,7 @@ from UnplacableShipException import UnplacableShipException
 import random
 from typing import List, Tuple, Set, Dict
 from enum import Enum
-from Sorting import insertionSortByIndex,bucketSortDescending
+from Sorting import insertionSortByIndex,insertionSortDescending
 class Grid:
     """
         THARUN-CB.SC.U4CSE24053
@@ -20,7 +20,7 @@ class Grid:
         if(any(ship>size for ship in shipLengths)):
             raise UnplacableShipException(f"Fleet cannot be made as not every one of  ships( Biggest with size: {max(shipLengths)}) fits into the board  of size {size}")
         self.fleet = Fleet(size)
-        self.shipLengths=bucketSortDescending(shipLengths.copy())
+        self.shipLengths=insertionSortDescending(shipLengths.copy())
         self.role=role
         self.shipCells=set()#stores all hit cells which hit a ship
     """
@@ -31,15 +31,14 @@ class Grid:
         For hitting use DP, something like tracing a path from top-left to bottom right in a grid in terms of DP
     """
     #bottom and rightbound are magnitude values, not actual values w.r.t the grid
-    #TC:0(n2) SC:0(1) extra
     def regionOccupancy(self,startI:int,startJ:int,rightBound:int,bottomBound:int)->int:
         #iterate over all coordinates and return how many cells in region are occupied
-        shipCellsInRegion=0
+        shipsInRegion=0
         for i in range(startI,startI+bottomBound+1):
             for j in range(startJ,startJ+rightBound+1):
                 if(self.fleet.cellOccupied((i,j))):
-                    shipCellsInRegion=shipCellsInRegion+1
-        return shipCellsInRegion
+                    shipsInRegion=shipsInRegion+1
+        return shipsInRegion
     
     def isPlacementValid(self, vertices):
         for v in vertices:
@@ -47,7 +46,7 @@ class Grid:
                 return False
         return True
     
-    #TC : O(1)
+
     #can periodically check for this from frontend after every move
     def allShipsSunk(self):
         return len(self.shipLengths)==0
@@ -84,7 +83,7 @@ class Grid:
             for i in range(shipSize):
                 vertices.add((randomI + i, randomJ))
         return vertices
-    #TC: O(n2logn) SC:O(logn)
+    
     #this function recursively does DAC to fit in ship, this only returns vertices where to place ship, actual ship placement 
     #has to be elsewhere
     def shipDAC(self,startI:int,startJ:int,rightBound:int,bottomBound:int,shipSize:int)->Tuple[Set[Tuple[int,int]],int]:
@@ -123,9 +122,8 @@ class Grid:
                 continue
             minOccupied=min(minOccupied,region[1])#get region with min ships
         minShipRegions=[region for region in [topLeft,topRight,bottomLeft,bottomRight] if region is not None and region[1]==minOccupied]
-        return (minShipRegions[random.randint(0,len(minShipRegions)-1)][0],self.regionOccupancy(startI,startJ,rightBound,bottomBound))
+        return minShipRegions[random.randint(0,len(minShipRegions)-1)]
 
-    #O(n2)
     def bruteForcePlacement(self, startI, startJ, rightBound, bottomBound, shipSize):
         endI = startI + bottomBound
         endJ = startJ + rightBound
@@ -151,7 +149,7 @@ class Grid:
         return None
 
     
-    #O(k*n2logn)
+
     def placeAllShips(self):#no return
         #uses shipDAC and places all ships
         for i in range(len(self.shipLengths)):
@@ -163,7 +161,7 @@ class Grid:
             self.fleet.addShip(placing)
         #will place all ships
 
-    #O(k)
+        
     def can_place_ship(self,r:int,c:int,length:int,orient:chr)->bool:
         #orient can be 'H' or 'V'
         if orient=='H':#horizontal placement
@@ -180,7 +178,7 @@ class Grid:
                 if(self.fleet.cellOccupied((r+i,c))):
                     return False
             return True
-    #O(k)
+    
     def player_place_ship(self, r:int, c:int, length:int, orient:chr):
         #frontend only calls this if canplaceship is true
         vertices=set()
@@ -257,10 +255,7 @@ class Grid:
             ]#all cells with shipcount==maxcount
         return random.choice(maxCells)#pick random cell from maxcells
     
-    def targetMode(self) -> Tuple[int, int]:
-        sideLength = self.fleet.sideLength
-
-        # ---- Step 1: Extract ONE connected cluster ----
+    def dfs(self):
         seed = next(iter(self.shipCells))
         stack = [seed]
         cluster = set()
@@ -276,6 +271,13 @@ class Grid:
             for n in neighbors:
                 if n in self.shipCells and n not in cluster:
                     stack.append(n)
+        return cluster
+    
+    def targetMode(self) -> Tuple[int, int]:
+        sideLength = self.fleet.sideLength
+
+        # ---- Step 1: Extract ONE connected cluster ----
+        cluster=self.dfs()
 
         hits = list(cluster)
 
@@ -354,7 +356,88 @@ class Grid:
                         return (i,j)
 
         return random.choice(valid)
-    
+        sideLength = self.fleet.sideLength
+
+        # ---- Step 1: get one connected cluster ----
+        seed = next(iter(self.shipCells))
+        stack = [seed]
+        cluster = set()
+
+        while stack:
+            cell = stack.pop()
+            if cell in cluster:
+                continue
+            cluster.add(cell)
+
+            i, j = cell
+            neighbors = [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]
+            for n in neighbors:
+                if n in self.shipCells and n not in cluster:
+                    stack.append(n)
+
+        hits = list(cluster)
+
+        # ---- Step 2: single hit ----
+        if len(hits) == 1:
+            i, j = hits[0]
+            neighbors = [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]
+
+            valid = [
+                (x,y)
+                for (x,y) in neighbors
+                if 0 <= x < sideLength
+                and 0 <= y < sideLength
+                and not self.fleet.cellHit((x,y))
+            ]
+
+            return random.choice(valid)
+
+        # ---- Step 3: determine orientation safely ----
+        rows = {i for i,_ in hits}
+        cols = {j for _,j in hits}
+
+        candidates = []
+
+        if len(rows) == 1:  # horizontal
+            row = next(iter(rows))
+            sorted_hits = insertionSortByIndex(hits.copy(), 1)
+            minCol = sorted_hits[0][1]
+            maxCol = sorted_hits[-1][1]
+
+            candidates = [
+                (row, minCol - 1),
+                (row, maxCol + 1)
+            ]
+
+        elif len(cols) == 1:  # vertical
+            col = next(iter(cols))
+            sorted_hits = insertionSortByIndex(hits.copy(), 0)
+            minRow = sorted_hits[0][0]
+            maxRow = sorted_hits[-1][0]
+
+            candidates = [
+                (minRow - 1, col),
+                (maxRow + 1, col)
+            ]
+
+        else:
+            # ambiguous (touching ships forming non-line shape)
+            for i,j in hits:
+                for n in [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]:
+                    if n not in cluster:
+                        candidates.append(n)
+
+        valid = [
+            (x,y)
+            for (x,y) in candidates
+            if 0 <= x < sideLength
+            and 0 <= y < sideLength
+            and not self.fleet.cellHit((x,y))
+        ]
+
+        # At this point, valid SHOULD exist if ship not resolved.
+        # If not, something outside targetMode should clear cluster.
+        return random.choice(valid)
     
     #THIS METHOD COMMUNICATES WITH FRONTEND SO MAKE INFORMATION VERY CLEAR
     def getHit(self)->Tuple[int,int]:
