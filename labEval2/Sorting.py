@@ -18,7 +18,7 @@ def insertionSortByIndex( arr: list[tuple[int,int]], index: int):
 
     return arr
 
-def insertionSortDescending(arr):
+def bucketSortDescending(arr):
     if len(arr) == 0:
         return arr
 
@@ -39,4 +39,5 @@ def insertionSortDescending(arr):
             sorted_arr.append(num)
 
     return sorted_arr
+
 
