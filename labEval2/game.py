@@ -8,10 +8,10 @@ class BattleshipGame:
         VISHNU  - CB.SC.U4CSE24060
     """
     def __init__(self):
-        SHIP_SIZES=[5,4,3,3,2]#hard coding ship sizes and grid size for now
-        GRID_SIZE=12
-        self.player_place_board = Grid(GRID_SIZE,SHIP_SIZES,Grid.Role.AI)#player places ships here,ai hits it
-        self.ai_place_board =Grid(GRID_SIZE,SHIP_SIZES,Grid.Role.PLAYER)
+        self.SHIP_SIZES=[5,4,3,3,2]#hard coding ship sizes and grid size for now
+        self.GRID_SIZE=12
+        self.player_place_board = Grid(self.GRID_SIZE,self.SHIP_SIZES,Grid.Role.AI)#player places ships here,ai hits it
+        self.ai_place_board =Grid(self.GRID_SIZE,self.SHIP_SIZES,Grid.Role.PLAYER)
 
         # tracking boards (what each side hits on)
         self.player_attack_board = self.ai_place_board#player hits on board which AI placed on
