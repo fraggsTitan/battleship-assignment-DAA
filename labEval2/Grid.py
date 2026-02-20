@@ -4,7 +4,7 @@ from UnplacableShipException import UnplacableShipException
 import random
 from typing import List, Tuple, Set, Dict
 from enum import Enum
-from Sorting import insertionSortByIndex,insertionSortDescending
+from Sorting import insertionSortByIndex,bucketSortDescending
 class Grid:
     """
         THARUN-CB.SC.U4CSE24053
@@ -20,7 +20,7 @@ class Grid:
         if(any(ship>size for ship in shipLengths)):
             raise UnplacableShipException(f"Fleet cannot be made as not every one of  ships( Biggest with size: {max(shipLengths)}) fits into the board  of size {size}")
         self.fleet = Fleet(size)
-        self.shipLengths=insertionSortDescending(shipLengths.copy())
+        self.shipLengths=bucketSortDescending(shipLengths.copy())
         self.role=role
         self.shipCells=set()#stores all hit cells which hit a ship
     """
