@@ -23,6 +23,7 @@ class Grid:
         self.shipLengths=insertionSortDescending(shipLengths.copy())
         self.role=role
         self.shipCells=set()#stores all hit cells which hit a ship
+    #REMOVE
     """
         Plan:
         For placement use DAC, for each ship, call  a DAC function that recursively divides board into subregions and
@@ -39,7 +40,7 @@ class Grid:
                 if(self.fleet.cellOccupied((i,j))):
                     shipsInRegion=shipsInRegion+1
         return shipsInRegion
-    
+    #--REMOVE--------------------------
     def isPlacementValid(self, vertices):
         for v in vertices:
             if self.fleet.cellOccupied(v):
@@ -54,7 +55,7 @@ class Grid:
     """
         Vishnu- CB.SC.U4CSE24060
     """
-
+    #REMOVE
     def generateRandomVerticesForShip(self,startI:int,startJ:int,rightBound:int,bottomBound:int,shipSize:int)->Set[Tuple[int,int]]:# This function is O(k) where k is shipSize
         #starti,startj specify a unique region in the fleet grid, this should be such that that region has 0 other ships
         #it must also be guaranteed that the ship of given size can actually fit in this region
@@ -149,7 +150,7 @@ class Grid:
         return None
 
     
-
+    #--REMOVE
     def placeAllShips(self):#no return
         #uses shipDAC and places all ships
         for i in range(len(self.shipLengths)):
@@ -254,7 +255,7 @@ class Grid:
                 if shipCounts[i][j] == maxCount
             ]#all cells with shipcount==maxcount
         return random.choice(maxCells)#pick random cell from maxcells
-    
+    #REMOVE
     def dfs(self):
         seed = next(iter(self.shipCells))
         stack = [seed]
@@ -356,88 +357,7 @@ class Grid:
                         return (i,j)
 
         return random.choice(valid)
-        sideLength = self.fleet.sideLength
-
-        # ---- Step 1: get one connected cluster ----
-        seed = next(iter(self.shipCells))
-        stack = [seed]
-        cluster = set()
-
-        while stack:
-            cell = stack.pop()
-            if cell in cluster:
-                continue
-            cluster.add(cell)
-
-            i, j = cell
-            neighbors = [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]
-            for n in neighbors:
-                if n in self.shipCells and n not in cluster:
-                    stack.append(n)
-
-        hits = list(cluster)
-
-        # ---- Step 2: single hit ----
-        if len(hits) == 1:
-            i, j = hits[0]
-            neighbors = [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]
-
-            valid = [
-                (x,y)
-                for (x,y) in neighbors
-                if 0 <= x < sideLength
-                and 0 <= y < sideLength
-                and not self.fleet.cellHit((x,y))
-            ]
-
-            return random.choice(valid)
-
-        # ---- Step 3: determine orientation safely ----
-        rows = {i for i,_ in hits}
-        cols = {j for _,j in hits}
-
-        candidates = []
-
-        if len(rows) == 1:  # horizontal
-            row = next(iter(rows))
-            sorted_hits = insertionSortByIndex(hits.copy(), 1)
-            minCol = sorted_hits[0][1]
-            maxCol = sorted_hits[-1][1]
-
-            candidates = [
-                (row, minCol - 1),
-                (row, maxCol + 1)
-            ]
-
-        elif len(cols) == 1:  # vertical
-            col = next(iter(cols))
-            sorted_hits = insertionSortByIndex(hits.copy(), 0)
-            minRow = sorted_hits[0][0]
-            maxRow = sorted_hits[-1][0]
-
-            candidates = [
-                (minRow - 1, col),
-                (maxRow + 1, col)
-            ]
-
-        else:
-            # ambiguous (touching ships forming non-line shape)
-            for i,j in hits:
-                for n in [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]:
-                    if n not in cluster:
-                        candidates.append(n)
-
-        valid = [
-            (x,y)
-            for (x,y) in candidates
-            if 0 <= x < sideLength
-            and 0 <= y < sideLength
-            and not self.fleet.cellHit((x,y))
-        ]
-
-        # At this point, valid SHOULD exist if ship not resolved.
-        # If not, something outside targetMode should clear cluster.
-        return random.choice(valid)
+        
     
     #THIS METHOD COMMUNICATES WITH FRONTEND SO MAKE INFORMATION VERY CLEAR
     def getHit(self)->Tuple[int,int]:
