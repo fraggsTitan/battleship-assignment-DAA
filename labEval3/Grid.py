@@ -23,24 +23,7 @@ class Grid:
         self.shipLengths=insertionSortDescending(shipLengths.copy())
         self.role=role
         self.shipCells=set()#stores all hit cells which hit a ship
-    #REMOVE
-    """
-        Plan:
-        For placement use DAC, for each ship, call  a DAC function that recursively divides board into subregions and
-        places ship in a region with minimum other ships
-
-        For hitting use DP, something like tracing a path from top-left to bottom right in a grid in terms of DP
-    """
-    #bottom and rightbound are magnitude values, not actual values w.r.t the grid
-    def regionOccupancy(self,startI:int,startJ:int,rightBound:int,bottomBound:int)->int:
-        #iterate over all coordinates and return how many cells in region are occupied
-        shipsInRegion=0
-        for i in range(startI,startI+bottomBound+1):
-            for j in range(startJ,startJ+rightBound+1):
-                if(self.fleet.cellOccupied((i,j))):
-                    shipsInRegion=shipsInRegion+1
-        return shipsInRegion
-    #--REMOVE--------------------------
+    
     def isPlacementValid(self, vertices):
         for v in vertices:
             if self.fleet.cellOccupied(v):
