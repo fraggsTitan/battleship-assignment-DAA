@@ -222,88 +222,132 @@ class Grid:
     
     
     def targetMode(self) -> Tuple[int, int]:
-        sideLength = self.fleet.sideLength
+            def _getAllClusters(self):
+        visited = set()
+        clusters = []
 
-        # ---- Step 1: Extract ONE connected cluster ----
-        cluster=self.dfs()
+        for cell in self.shipCells:
+            if cell in visited:
+                continue
 
-        hits = list(cluster)
+            stack = [cell]
+            component = set()
 
-        candidates = []
+            while stack:
+                curr = stack.pop()
+                if curr in visited:
+                    continue
 
-        # ---- Step 2: Single hit case ----
-        if len(hits) == 1:
-            i, j = hits[0]
-            neighbors = [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]
-            candidates.extend(neighbors)
+                visited.add(curr)
+                component.add(curr)
 
-        else:
-            rows = {i for i,_ in hits}
-            cols = {j for _,j in hits}
+                r, c = curr
+                neighbors = [(r+1,c),(r-1,c),(r,c+1),(r,c-1)]
+                for n in neighbors:
+                    if n in self.shipCells and n not in visited:
+                        stack.append(n)
 
-            # Horizontal
-            if len(rows) == 1:
+            clusters.append(component)
+
+        return clusters
+    #--add
+    #modify
+    def targetMode(self) -> Tuple[int, int]:
+        size = self.fleet.sideLength
+        clusters = self._getAllClusters()
+
+        # Resolve larger clusters first
+        clusters.sort(key=len, reverse=True)
+
+        for cluster in clusters:
+
+            hits = list(cluster)
+
+            # ---------- CASE 1: Single Hit ----------
+            if len(hits) == 1:
+                r, c = hits[0]
+                neighbors = [(r+1,c),(r-1,c),(r,c+1),(r,c-1)]
+
+                valid = [
+                    (nr,nc)
+                    for (nr,nc) in neighbors
+                    if 0 <= nr < size and 0 <= nc < size
+                    and not self.fleet.cellHit((nr,nc))
+                ]
+
+                if valid:
+                    return random.choice(valid)
+
+            # ---------- CASE 2: Multiple Hits ----------
+            rows = {r for r,_ in hits}
+            cols = {c for _,c in hits}
+
+            # --------- ORIENTATION LOCKED ----------
+            if len(rows) == 1:  # Horizontal
                 row = next(iter(rows))
                 sorted_hits = sorted(hits, key=lambda x: x[1])
-                minCol = sorted_hits[0][1]
-                maxCol = sorted_hits[-1][1]
+                left = sorted_hits[0][1]
+                right = sorted_hits[-1][1]
 
-                candidates.append((row, minCol - 1))
-                candidates.append((row, maxCol + 1))
+                candidates = [
+                    (row, left-1),
+                    (row, right+1)
+                ]
 
-            # Vertical
-            elif len(cols) == 1:
+            elif len(cols) == 1:  # Vertical
                 col = next(iter(cols))
                 sorted_hits = sorted(hits, key=lambda x: x[0])
-                minRow = sorted_hits[0][0]
-                maxRow = sorted_hits[-1][0]
+                top = sorted_hits[0][0]
+                bottom = sorted_hits[-1][0]
 
-                candidates.append((minRow - 1, col))
-                candidates.append((maxRow + 1, col))
-
-            # Weird shape (inconsistent cluster)
-            else:
-                for i,j in hits:
-                    neighbors = [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]
-                    candidates.extend(neighbors)
-
-        # ---- Step 3: Filter valid candidates ----
-        valid = [
-            (x,y)
-            for (x,y) in candidates
-            if 0 <= x < sideLength
-            and 0 <= y < sideLength
-            and not self.fleet.cellHit((x,y))
-        ]
-
-        # ---- Step 4: If no direct extension works ----
-        if not valid:
-            # Expand search around cluster more aggressively
-            expanded = []
-            for i,j in cluster:
-                neighbors = [
-                    (i+1,j),(i-1,j),(i,j+1),(i,j-1),
-                    (i+1,j+1),(i+1,j-1),(i-1,j+1),(i-1,j-1)
+                candidates = [
+                    (top-1, col),
+                    (bottom+1, col)
                 ]
-                expanded.extend(neighbors)
 
+            # --------- AMBIGUOUS (L SHAPE OR TOUCHING SHIPS) ----------
+            else:
+                candidates = []
+                for (r,c) in hits:
+                    neighbors = [(r+1,c),(r-1,c),(r,c+1),(r,c-1)]
+                    for cell in neighbors:
+                        if cell not in cluster:
+                            candidates.append(cell)
+
+            # ---------- FILTER VALID ----------
             valid = [
-                (x,y)
-                for (x,y) in expanded
-                if 0 <= x < sideLength
-                and 0 <= y < sideLength
-                and not self.fleet.cellHit((x,y))
+                (r,c)
+                for (r,c) in candidates
+                if 0 <= r < size and 0 <= c < size
+                and not self.fleet.cellHit((r,c))
             ]
 
-        # ---- Final Safety: GUARANTEED return inside target mode ----
-        if not valid:
-            # Last resort: pick any unhit cell adjacent to cluster region
-            for i in range(sideLength):
-                for j in range(sideLength):
-                    if not self.fleet.cellHit((i,j)):
-                        return (i,j)
+            if valid:
+                return random.choice(valid)
 
-        return random.choice(valid)
+            # ---------- BACKTRACK STEP ----------
+            # If orientation guessed but ends blocked,
+            # try all adjacent cells of cluster
+
+            expanded = []
+            for (r,c) in hits:
+                neighbors = [(r+1,c),(r-1,c),(r,c+1),(r,c-1)]
+                for cell in neighbors:
+                    if cell not in cluster:
+                        expanded.append(cell)
+
+            valid = [
+                (r,c)
+                for (r,c) in expanded
+                if 0 <= r < size and 0 <= c < size
+                and not self.fleet.cellHit((r,c))
+            ]
+
+            if valid:
+                return random.choice(valid)
+
+        # If no cluster produced move (should not happen)
+        raise Exception("Target mode failed to find adjacent extension.")
         
     
     #THIS METHOD COMMUNICATES WITH FRONTEND SO MAKE INFORMATION VERY CLEAR
