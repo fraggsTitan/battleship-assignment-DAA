@@ -109,7 +109,24 @@ class Grid:
         else:
             for i in range(length):
                 vertices.append((row+i, col))
-        
+
+    def can_place_shipAI(self, row:int, col:int, length:int, horizontal:bool):
+        size = self.fleet.sideLength
+
+        if horizontal:
+            if col + length > size:
+                return False
+            for i in range(length):
+                if self._blocked[row][col+i] > 0:
+                    return False
+        else:
+            if row + length > size:
+                return False
+            for i in range(length):
+                if self._blocked[row+i][col] > 0:
+                    return False
+
+        return True        
     def can_place_ship(self,r:int,c:int,length:int,orient:chr)->bool:
         #orient can be 'H' or 'V'
         if orient=='H':#horizontal placement
