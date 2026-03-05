@@ -219,24 +219,7 @@ class Grid:
                 if shipCounts[i][j] == maxCount
             ]#all cells with shipcount==maxcount
         return random.choice(maxCells)#pick random cell from maxcells
-    #REMOVE
-    def dfs(self):
-        seed = next(iter(self.shipCells))
-        stack = [seed]
-        cluster = set()
-
-        while stack:
-            cell = stack.pop()
-            if cell in cluster:
-                continue
-            cluster.add(cell)
-
-            i, j = cell
-            neighbors = [(i+1,j),(i-1,j),(i,j+1),(i,j-1)]
-            for n in neighbors:
-                if n in self.shipCells and n not in cluster:
-                    stack.append(n)
-        return cluster
+    
     
     def targetMode(self) -> Tuple[int, int]:
         sideLength = self.fleet.sideLength
