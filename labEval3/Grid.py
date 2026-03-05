@@ -37,16 +37,26 @@ class Grid:
 
 
     #--REMOVE
-    def placeAllShips(self):#no return
-        #uses shipDAC and places all ships
-        for i in range(len(self.shipLengths)):
-            ship=self.shipLengths[i]
-            result=self.shipDAC(0,0,self.fleet.sideLength-1,self.fleet.sideLength-1,ship)#returns a vertex set
-            if (result is None):
-                raise UnplacableShipException(f"All ships couldn't be placed: (Issue encountered on ship at index {i} in {self.shipLengths})")
-            placing=result[0]
-            self.fleet.addShip(placing)
-        #will place all ships
+    def placeAllShips(self):
+        """
+        Backtracking based full fleet placement.
+        Randomized search order for different board layouts each run.
+        """
+        success = self.placeShipsBacktracking()
+
+        if not success:
+            raise UnplacableShipException(
+                f"All ships couldn't be placed: {self.shipLengths}"
+            )
+
+        # Fix aliveShips count properly after placement
+        self.fleet.aliveShips = len(self.fleet.ships)
+    def placeShipsBacktracking(self):
+        self._blocked = [[0]*self.fleet.sideLength for _ in range(self.fleet.sideLength)]
+        ships = list(self.shipLengths)
+        random.shuffle(ships)   # randomness in order
+        return self._placeHelper(ships, 0)
+        
     def _placeHelper(self, ships, index):
         if index == len(ships):
             return True
@@ -89,6 +99,16 @@ class Grid:
                     nc = c + dc
                     if 0 <= nr < size and 0 <= nc < size:
                         self._blocked[nr][nc] += delta
+
+    def _getVertices(self, row, col, length, horizontal):
+        vertices = []
+
+        if horizontal:
+            for i in range(length):
+                vertices.append((row, col+i))
+        else:
+            for i in range(length):
+                vertices.append((row+i, col))
         
     def can_place_ship(self,r:int,c:int,length:int,orient:chr)->bool:
         #orient can be 'H' or 'V'
