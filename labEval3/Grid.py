@@ -221,8 +221,7 @@ class Grid:
         return random.choice(maxCells)#pick random cell from maxcells
     
     
-    def targetMode(self) -> Tuple[int, int]:
-            def _getAllClusters(self):
+    def _getAllClusters(self):
         visited = set()
         clusters = []
 
