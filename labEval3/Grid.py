@@ -47,7 +47,48 @@ class Grid:
             placing=result[0]
             self.fleet.addShip(placing)
         #will place all ships
+    def _placeHelper(self, ships, index):
+        if index == len(ships):
+            return True
 
+        size = self.fleet.sideLength
+        length = ships[index]
+
+        positions = [(r, c) for r in range(size) for c in range(size)]
+        random.shuffle(positions)
+
+        orientations = [True, False]
+        random.shuffle(orientations)
+
+        for horizontal in orientations:
+            for (row, col) in positions:
+
+                if self.can_place_shipAI(row, col, length, horizontal):
+
+                    vertices = self._getVertices(row, col, length, horizontal)
+
+                    # Place
+                    self.fleet.addShip(vertices)
+                    self._markShip(vertices, +1)
+
+                    if self._placeHelper(ships, index + 1):
+                        return True
+
+                    # Backtrack
+                    self._markShip(vertices, -1)
+                    self.fleet.removeShip(vertices)
+
+        return False
+    def _markShip(self, vertices, delta):
+        size = self.fleet.sideLength
+
+        for (r, c) in vertices:
+            for dr in [-1, 0, 1]:
+                for dc in [-1, 0, 1]:
+                    nr = r + dr
+                    nc = c + dc
+                    if 0 <= nr < size and 0 <= nc < size:
+                        self._blocked[nr][nc] += delta
         
     def can_place_ship(self,r:int,c:int,length:int,orient:chr)->bool:
         #orient can be 'H' or 'V'
