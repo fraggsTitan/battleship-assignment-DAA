@@ -33,6 +33,27 @@ class Fleet:
 
         for coordinate in newShip.cells:
             self.nodes[coordinate]=newShip
+
+    def removeShip(self, vertices: Set[Tuple[int,int]]):
+        if not vertices:
+            return
+
+        any_cell = next(iter(vertices))
+        ship = self.nodes.get(any_cell)
+
+        if ship is None:
+            return
+
+        # Remove ship from ships set
+        self.ships.discard(ship)
+
+        # Remove all coordinates from nodes
+        for cell in ship.cells:
+            self.nodes.pop(cell, None)
+
+        # Adjust alive count
+        if self.aliveShips > 0:
+            self.aliveShips -= 1
         
 
     def hitShip(self,coordinate:Tuple[int,int])->HitRecord:#orchestrates a hit 
