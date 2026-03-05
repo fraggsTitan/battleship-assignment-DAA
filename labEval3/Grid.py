@@ -24,6 +24,7 @@ class Grid:
         self.role=role
         self.shipCells=set()#stores all hit cells which hit a ship
     
+    
     def isPlacementValid(self, vertices):
         for v in vertices:
             if self.fleet.cellOccupied(v):
@@ -34,9 +35,7 @@ class Grid:
     #can periodically check for this from frontend after every move
     def allShipsSunk(self):
         return len(self.shipLengths)==0
-
-
-    #--REMOVE
+    #add
     def placeAllShips(self):
         """
         Backtracking based full fleet placement.
@@ -48,7 +47,7 @@ class Grid:
             raise UnplacableShipException(
                 f"All ships couldn't be placed: {self.shipLengths}"
             )
-
+        print(self.fleet)
         # Fix aliveShips count properly after placement
         self.fleet.aliveShips = len(self.fleet.ships)
     def placeShipsBacktracking(self):
@@ -56,7 +55,7 @@ class Grid:
         ships = list(self.shipLengths)
         random.shuffle(ships)   # randomness in order
         return self._placeHelper(ships, 0)
-        
+    
     def _placeHelper(self, ships, index):
         if index == len(ships):
             return True
@@ -99,7 +98,6 @@ class Grid:
                     nc = c + dc
                     if 0 <= nr < size and 0 <= nc < size:
                         self._blocked[nr][nc] += delta
-
     def _getVertices(self, row, col, length, horizontal):
         vertices = []
 
@@ -110,6 +108,7 @@ class Grid:
             for i in range(length):
                 vertices.append((row+i, col))
 
+        return vertices
     def can_place_shipAI(self, row:int, col:int, length:int, horizontal:bool):
         size = self.fleet.sideLength
 
@@ -126,7 +125,8 @@ class Grid:
                 if self._blocked[row+i][col] > 0:
                     return False
 
-        return True        
+        return True
+    #--add
     def can_place_ship(self,r:int,c:int,length:int,orient:chr)->bool:
         #orient can be 'H' or 'V'
         if orient=='H':#horizontal placement
@@ -143,7 +143,6 @@ class Grid:
                 if(self.fleet.cellOccupied((r+i,c))):
                     return False
             return True
-    
     def player_place_ship(self, r:int, c:int, length:int, orient:chr):
         #frontend only calls this if canplaceship is true
         vertices=set()
@@ -219,8 +218,7 @@ class Grid:
                 if shipCounts[i][j] == maxCount
             ]#all cells with shipcount==maxcount
         return random.choice(maxCells)#pick random cell from maxcells
-    
-    
+    #add
     def _getAllClusters(self):
         visited = set()
         clusters = []
@@ -347,8 +345,7 @@ class Grid:
 
         # If no cluster produced move (should not happen)
         raise Exception("Target mode failed to find adjacent extension.")
-        
-    
+    #--modify
     #THIS METHOD COMMUNICATES WITH FRONTEND SO MAKE INFORMATION VERY CLEAR
     def getHit(self)->Tuple[int,int]:
         print("AI ships:",self.shipLengths)
