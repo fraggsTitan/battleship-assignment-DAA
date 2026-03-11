@@ -160,6 +160,7 @@ class Grid:
             placing=result[0]
             self.fleet.addShip(placing)
         #will place all ships
+        print(self.fleet)
 
         
     def can_place_ship(self,r:int,c:int,length:int,orient:chr)->bool:
